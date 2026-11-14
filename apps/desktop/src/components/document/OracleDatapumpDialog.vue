@@ -261,8 +261,8 @@ async function start() {
       schemas: jobMode.value === "schema" ? parseList(schemas.value) : [],
       tables: jobMode.value === "table" ? parseList(tables.value) : [],
       // 源 = 目标时不发 REMAP（同名映射无意义，Oracle 会警告）。
-      remapSchemaFrom: !exporting.value && remapTo.value.trim() && remapTo.value.trim() !== parseList(schemas.value)[0] ? parseList(schemas.value)[0] : null,
-      remapSchemaTo: !exporting.value && remapTo.value.trim() && remapTo.value.trim() !== parseList(schemas.value)[0] ? remapTo.value.trim() : null,
+      remapSchemaFrom: !exporting.value && remapTo.value.trim() && remapTo.value.trim() !== (parseList(schemas.value)[0] || parseList(tables.value)[0]?.split(".")[0] || props.database) ? parseList(schemas.value)[0] || parseList(tables.value)[0]?.split(".")[0] || props.database : null,
+      remapSchemaTo: !exporting.value && remapTo.value.trim() && remapTo.value.trim() !== (parseList(schemas.value)[0] || parseList(tables.value)[0]?.split(".")[0] || props.database) ? remapTo.value.trim() : null,
       tableExistsAction: exporting.value ? null : tableExistsAction.value,
       compression: exporting.value && compression.value === "ALL",
     });

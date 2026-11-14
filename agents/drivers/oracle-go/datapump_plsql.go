@@ -91,8 +91,15 @@ BEGIN
 		expr := datapumpNameListExpr(request.Schemas)
 		b.WriteString("  SYS.DBMS_DATAPUMP.METADATA_FILTER(handle => h, name => 'SCHEMA_EXPR', value => " + datapumpSQLLiteral(expr) + ");\n")
 	} else {
-		expr := datapumpNameListExpr(request.Tables)
-		b.WriteString("  SYS.DBMS_DATAPUMP.METADATA_FILTER(handle => h, name => 'NAME_EXPR', value => " + datapumpSQLLiteral(expr) + ");\n")
+		// Oracle 标准做法：表模式拆成两个过滤器（NAME_EXPR 只放表名，
+		// SCHEMA_EXPR 放 schema），直接用 NAME_EXPR='IN(CMS.EMP)' 部分版本不认。
+		tableSchemas, tableNames := datapumpSplitTableNames(request.Tables)
+		nameExpr := datapumpNameListExpr(tableNames)
+		b.WriteString("  SYS.DBMS_DATAPUMP.METADATA_FILTER(handle => h, name => 'NAME_EXPR', value => " + datapumpSQLLiteral(nameExpr) + ");\n")
+		if len(tableSchemas) > 0 {
+			schemaExpr := datapumpNameListExpr(tableSchemas)
+			b.WriteString("  SYS.DBMS_DATAPUMP.METADATA_FILTER(handle => h, name => 'SCHEMA_EXPR', value => " + datapumpSQLLiteral(schemaExpr) + ");\n")
+		}
 	}
 	// 导入专属：schema 重映射（如 SCOTT → SCOTT2）。
 	if request.RemapSchemaFrom != "" {
@@ -247,3 +254,22 @@ BEGIN
   UTL_FILE.FREMOVE(UPPER(:directory), 'dbx_dp_probe.tmp');
 END;`
 )
+
+// datapumpSplitTableNames 拆解 SCHEMA.TABLE 列表为两个去重列表。
+// 有前缀的取前缀，无前缀的跳过 schema 列表（由外部补）。
+func datapumpSplitTableNames(tables []string) (schemas, names []string) {
+	seen := map[string]bool{}
+	for _, table := range tables {
+		parts := strings.SplitN(table, ".", 2)
+		if len(parts) == 2 {
+			if !seen[parts[0]] {
+				seen[parts[0]] = true
+				schemas = append(schemas, parts[0])
+			}
+			names = append(names, parts[1])
+		} else {
+			names = append(names, table)
+		}
+	}
+	return schemas, names
+}

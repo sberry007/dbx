@@ -217,6 +217,20 @@ pub async fn run_oracle_datapump_task(
         }
     };
 
+    // 表模式下，不带 schema 前缀的表名自动补上当前 schema（否则 Data Pump
+    // 按连接用户的 schema 找——SYS 连接下找不到业务表 → ORA-31655 零对象）。
+    let tables: Vec<String> = request
+        .tables
+        .iter()
+        .map(|table| {
+            if table.contains('.') || request.database.trim().is_empty() {
+                table.clone()
+            } else {
+                format!("{}.{}", request.database.trim().to_uppercase(), table)
+            }
+        })
+        .collect();
+
     let start_params = json!({
         "operationId": format!("dbx-{}", request.task_id),
         "kind": request.kind,
@@ -225,7 +239,7 @@ pub async fn run_oracle_datapump_task(
         "dumpfile": request.dumpfile,
         "logfile": request.logfile,
         "schemas": request.schemas,
-        "tables": request.tables,
+        "tables": tables,
         "remapSchemaFrom": request.remap_schema_from,
         "remapSchemaTo": request.remap_schema_to,
         "tableExistsAction": request.table_exists_action,

@@ -315,6 +315,12 @@ func (e *datapumpEntry) poll(ctx context.Context, oci bool) {
 			return
 		}
 		if terminalState, reason := datapumpTerminalState(values.JobState); terminalState != "" {
+			// COMPLETED 但有错误 → 升级为 failed（GET_STATUS 的 job_state
+			// 有时只报 "COMPLETED"，错误只体现在 error 列表里）。
+			if terminalState == "succeeded" && values.ErrorCount > 0 {
+				terminalState = "failed"
+				reason = "datapump_completed_with_errors"
+			}
 			e.mu.Lock()
 			e.snapshot = values
 			e.mu.Unlock()

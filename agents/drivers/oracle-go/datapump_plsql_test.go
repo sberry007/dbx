@@ -68,7 +68,8 @@ func TestBuildDatapumpOpenScriptImport(t *testing.T) {
 	script := buildDatapumpOpenScript(request, "import.log")
 
 	for _, marker := range []string{
-		"METADATA_FILTER(handle => h, name => 'NAME_EXPR', value => 'IN (''SCOTT.EMP'',''SCOTT.DEPT'')')",
+		"METADATA_FILTER(handle => h, name => 'NAME_EXPR', value => 'IN (''EMP'',''DEPT'')')",
+		"METADATA_FILTER(handle => h, name => 'SCHEMA_EXPR', value => 'IN (''SCOTT'')')",
 		"METADATA_REMAP(handle => h, name => 'REMAP_SCHEMA', old_value => :remap_from, value => :remap_to)",
 		"SET_PARAMETER(handle => h, name => 'TABLE_EXISTS_ACTION', value => :table_exists_action)",
 	} {
