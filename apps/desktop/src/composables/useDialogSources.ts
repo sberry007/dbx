@@ -1,4 +1,4 @@
-import { ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import type { DatabaseExportSelectedObject, SqlFilePreview } from "@/lib/backend/api";
 import { useExportTracker, type ExportTask } from "@/composables/useExportTracker";
 import { useI18n } from "vue-i18n";
@@ -28,6 +28,10 @@ const showDamengDumpDialog = ref(false);
 const damengDumpPrefillConnectionId = ref("");
 const damengDumpPrefillDatabase = ref("");
 const damengDumpMode = ref<"export" | "import">("export");
+const showOracleDatapumpDialog = ref(false);
+const oracleDatapumpPrefillConnectionId = ref("");
+const oracleDatapumpPrefillDatabase = ref("");
+const oracleDatapumpMode = ref<"export" | "import">("export");
 const showTableDataGenerateDialog = ref(false);
 const tableDataGenerateSessionId = ref<string | null>(null);
 const showFieldLineageDialog = ref(false);
@@ -362,6 +366,18 @@ export function useDialogSources() {
     );
 
     watch(
+      () => connectionStore.oracleDatapumpSource,
+      (source) => {
+        if (!source) return;
+        oracleDatapumpPrefillConnectionId.value = source.connectionId;
+        oracleDatapumpPrefillDatabase.value = source.database;
+        oracleDatapumpMode.value = source.mode;
+        showOracleDatapumpDialog.value = true;
+        connectionStore.oracleDatapumpSource = null;
+      },
+    );
+
+    watch(
       () => connectionStore.tableDataGenerateSource,
       (v) => {
         if (v) {
@@ -638,6 +654,10 @@ export function useDialogSources() {
     mongoDatabaseDumpPrefillDatabase,
     mongoDatabaseDumpMode,
     showDamengDumpDialog,
+    showOracleDatapumpDialog,
+    oracleDatapumpPrefillConnectionId,
+    oracleDatapumpPrefillDatabase,
+    oracleDatapumpMode,
     damengDumpPrefillConnectionId,
     damengDumpPrefillDatabase,
     damengDumpMode,
